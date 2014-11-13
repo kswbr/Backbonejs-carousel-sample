@@ -1,4 +1,38 @@
-(function() {
+$(function(){
+
+  var Cell =  Backbone.Model.extend({
+
+    // Default attributes for the todo item.
+    defaults: function() {
+      return {
+        current: false
+        order: Cells.nextOrder(),
+      };
+    }
+
+  });
+  var List = Backbone.Collection.extend({
+
+    model: Cell,
+    localStorage: new Backbone.LocalStorage("slider-lists"),
+    current: function() {
+      return this.where({current: true});
+    },
+    notCurrent: function() {
+      console.log(this.without.apply(this))
+      console.log(this.without.apply(this,this.current()))
+      return this.without.apply(this, this.current());
+    },
+    nextOrder: function() {
+      if (!this.length) return 1;
+      return this.last().get('order') + 1;
+    },
+    comparator: 'order'
+
+  });
+
+  var Cells = new List
+
 
   var _config = {
     slide:{
@@ -116,4 +150,4 @@
 
 
 
-})()
+});
