@@ -47,7 +47,7 @@
   </style>
 <!-- めんどうくさかったのでCDNまんまで -->
   <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
-  <script src="lodash.underscore.min.js"></script>
+  <script src="./js/underscore.js"></script>
 
 </head>
 <body>
@@ -77,10 +77,7 @@
 
 </div>
 
-<script src="slide.js"></script>
-<script type="text/javascript">
+<script src="./js/slide.js"></script>
 
-
-</script>
 </body>
 </html>
