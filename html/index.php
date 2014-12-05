@@ -45,7 +45,6 @@
       margin-left: -45px;
     }
   </style>
-<!-- めんどうくさかったのでCDNまんまで -->
   <script src="./js/json2.js"></script>
   <script src="./js/jquery.js"></script>
   <script src="./js/underscore.js"></script>
