@@ -1,5 +1,6 @@
 (function() {
 
+  console.time('init');
   var _config = {
     slide:{
       duration:200
@@ -7,9 +8,7 @@
   }
 
   var Slider = function(){
-    console.time('init');
     this.init();
-    console.timeEnd('init');
 
   }
   Slider.prototype = {
@@ -114,6 +113,7 @@
 
   var slider = new Slider();
 
+  console.timeEnd('init');
 
 
 })()
