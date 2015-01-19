@@ -1,119 +1,141 @@
-(function() {
+;(function(){
 
-  console.time('init');
-  var _config = {
-    slide:{
-      duration:200
-    }
+  function getMargin($target,prop){
+    return parseInt($target.css(prop));
   }
 
-  var Slider = function(){
-    this.init();
+  var Cell =  Backbone.Model.extend({
 
-  }
-  Slider.prototype = {
-
-    init:function(){
-      var self = this;
-
-      this.$slide = $("#slide")
-      this.$slide_lists = this.$slide.find("li");
-
-      this.setSlideWidth();
-
-      this.current_index = this.getSlideIndex();
-
-      this.slideLists();
-
-      $("#prev").on("click",function(){
-        self.current_index--;
-
-        //とぅーどうー
-        if (self.current_index < 0)
-          self.current_index = 99;
-
-        self.slideLists();
-      })
-      $("#next").on("click",function(){
-        self.current_index++;
-
-        //とぅーどうー
-        if (self.current_index >= 100)
-          self.current_index = 0;
-
-        self.slideLists();
-      })
-    },
-    setSlideWidth:function(){
-
-      var width_all = 0;
-      var self = this;
-      var margin = this.getSlideListMargin();
-      this.slide_wrapper_width = $("#slide-wrap").width();
-
-      this.slide_lists = {
-        position:[],
-        width:[]
+    defaults: function() {
+      return {
+        current: false,
+        order: Cells.nextOrder(),
+        width:0,
+        position: 0
       };
+    },
 
-      this.$slide_lists.each(function(i){
+  });
 
-        var $me = $(this)
-        var width = $me.width();
-        self.slide_lists.width[i] = width + margin;
+  var CellList = Backbone.Collection.extend({
+    model: Cell,
+    localStorage: new Backbone.LocalStorage("slider-lists"),
+    nextOrder: function() {
+      if (!this.length) return 1;
+      return this.last().get('order') + 1;
+    },
+    updatePosition:function(index){
+      this.each(function(item){
+        item.set({"current":false},{silent:true})
+      })
+      this.at(index).set("current",true)
+    },
+    getCurrentIndex:function(){
+      var cell = this.where({current:true})[0]
+      return this.indexOf(cell);
+    },
+    comparator: 'order'
+  });
 
-        width_all += self.slide_lists.width[i]
-        self.slide_lists.position[i] = width_all - margin - (width / 2);
+  var Cells = new CellList;
+
+
+  var CellView = Backbone.View.extend({
+    initialize: function() {
+      this.setSlidePostion();
+    },
+    setSlidePostion:function(){
+      var width = this.$el.width()
+      var margin = getMargin(this.$el,"margin-right");
+
+      this.model.set("width",width + margin);
+
+      var width_all = Cells.reduce(function(prev,model){
+        return prev + model.get("width");
+      },0);
+      this.model.set("position",width_all - margin - (width / 2));
+    }
+  })
+
+  var Slider = Backbone.Model.extend({
+    defaults: function() {
+      return {
+        width:0,
+        duration:200,
+      };
+    }
+  })
+
+  var slider = new Slider;
+  var SliderView = Backbone.View.extend({
+    model: slider,
+    el:$("#slide"),
+    initialize: function() {
+      this.model.set("width",this.$el.parent("#slide-wrap").width())
+      this.listenTo(Cells, 'add', this.addOne);
+      this.listenTo(Cells, 'change:current', this.moveSlider);
+
+      this.$("li").each(function(){
+        Cells.create(new Cell);
       })
 
-      this.slide_width = width_all;
-      this.$slide.width(width_all);
+      Cells.updatePosition(50);
     },
-
-    getSlideListMargin:function(){
-      return getMargin(this.$slide_lists,"margin-right");
+    addOne:function(cell){
+      var index = Cells.indexOf(cell);
+      new CellView({model:cell,el:this.$("li").eq(index)})
     },
-
-    slideLists:function(){
-      var index = this.current_index;
-      var position = this.slide_lists.position[index] * -1 + (this.slide_wrapper_width / 2);
-
-      this.animateSlideLists(position);
-    },
-    animateSlideLists:function(position){
+    moveSlider:function(){
 
       var df = new $.Deferred();
       var self = this;
-      var duration = _config.slide.duration;
+      var duration = this.model.get("duration");
+      var position = this.getSlidePosition();
 
-      this.is_animating = true;
-
-      this.$slide.stop(true,false).animate(
+      this.$el.stop(true,false).animate(
         {"margin-left":position},
         duration,
         function(){
-          self.is_animating = false;
           df.resolve();
       });
 
       return df.promise();
 
     },
-
-    getSlideIndex:function(){
-      //TODOTODO
-      return 50;
+    getSlidePosition:function(){
+      var current = Cells.where({current:true})[0];
+      return current.get("position") * -1 + (this.model.get("width") / 2) ;
     }
+  });
 
-  }
+  var ControllerView = Backbone.View.extend({
+    el:$("#control"),
+    // The DOM events specific to an item.
+    events: {
+      "click #prev"   : "prev",
+      "click #next"   : "next",
+    },
+    next:function(){
+      var index = Cells.getCurrentIndex() + 1;
 
-  function getMargin($target,prop){
-    return parseInt($target.css(prop));
-  }
+      if (index >= Cells.length)
+        index = 0
 
-  var slider = new Slider();
+      Cells.updatePosition(index);
 
-  console.timeEnd('init');
+    },
+    prev:function(){
+      var index = Cells.getCurrentIndex() - 1;
 
+      if (index < 0)
+        index = Cells.length - 1
 
-})()
+      Cells.updatePosition(index);
+    }
+  });
+
+  var Slider = new SliderView;
+  var Controller = new ControllerView;
+
+})();
+
