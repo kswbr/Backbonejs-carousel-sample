@@ -1,141 +1,119 @@
-;(function(){
+(function() {
 
-  function getMargin($target,prop){
-    return parseInt($target.css(prop));
+  var _config = {
+    slide:{
+      duration:200
+    }
   }
 
-  var Cell =  Backbone.Model.extend({
+  var Slider = function(){
+    console.time('init');
+    this.init();
+    console.timeEnd('init');
 
-    defaults: function() {
-      return {
-        current: false,
-        order: Cells.nextOrder(),
-        width:0,
-        position: 0
-      };
-    },
+  }
+  Slider.prototype = {
 
-  });
+    init:function(){
+      var self = this;
 
-  var CellList = Backbone.Collection.extend({
-    model: Cell,
-    localStorage: new Backbone.LocalStorage("slider-lists"),
-    nextOrder: function() {
-      if (!this.length) return 1;
-      return this.last().get('order') + 1;
-    },
-    updatePosition:function(index){
-      this.each(function(item){
-        item.set({"current":false},{silent:true})
+      this.$slide = $("#slide")
+      this.$slide_lists = this.$slide.find("li");
+
+      this.setSlideWidth();
+
+      this.current_index = this.getSlideIndex();
+
+      this.slideLists();
+
+      $("#prev").on("click",function(){
+        self.current_index--;
+
+        //とぅーどうー
+        if (self.current_index < 0)
+          self.current_index = 99;
+
+        self.slideLists();
       })
-      this.at(index).set("current",true)
+      $("#next").on("click",function(){
+        self.current_index++;
+
+        //とぅーどうー
+        if (self.current_index >= 100)
+          self.current_index = 0;
+
+        self.slideLists();
+      })
     },
-    getCurrentIndex:function(){
-      var cell = this.where({current:true})[0]
-      return this.indexOf(cell);
-    },
-    comparator: 'order'
-  });
+    setSlideWidth:function(){
 
-  var Cells = new CellList;
+      var width_all = 0;
+      var self = this;
+      var margin = this.getSlideListMargin();
+      this.slide_wrapper_width = $("#slide-wrap").width();
 
-
-  var CellView = Backbone.View.extend({
-    initialize: function() {
-      this.setSlidePostion();
-    },
-    setSlidePostion:function(){
-      var width = this.$el.width()
-      var margin = getMargin(this.$el,"margin-right");
-
-      this.model.set("width",width + margin);
-
-      var width_all = Cells.reduce(function(prev,model){
-        return prev + model.get("width");
-      },0);
-      this.model.set("position",width_all - margin - (width / 2));
-    }
-  })
-
-  var Slider = Backbone.Model.extend({
-    defaults: function() {
-      return {
-        width:0,
-        duration:200,
+      this.slide_lists = {
+        position:[],
+        width:[]
       };
-    }
-  })
 
-  var slider = new Slider;
-  var SliderView = Backbone.View.extend({
-    model: slider,
-    el:$("#slide"),
-    initialize: function() {
-      this.model.set("width",this.$el.parent("#slide-wrap").width())
-      this.listenTo(Cells, 'add', this.addOne);
-      this.listenTo(Cells, 'change:current', this.moveSlider);
+      this.$slide_lists.each(function(i){
 
-      this.$("li").each(function(){
-        Cells.create(new Cell);
+        var $me = $(this)
+        var width = $me.width();
+        self.slide_lists.width[i] = width + margin;
+
+        width_all += self.slide_lists.width[i]
+        self.slide_lists.position[i] = width_all - margin - (width / 2);
       })
 
-      Cells.updatePosition(50);
+      this.slide_width = width_all;
+      this.$slide.width(width_all);
     },
-    addOne:function(cell){
-      var index = Cells.indexOf(cell);
-      new CellView({model:cell,el:this.$("li").eq(index)})
+
+    getSlideListMargin:function(){
+      return getMargin(this.$slide_lists,"margin-right");
     },
-    moveSlider:function(){
+
+    slideLists:function(){
+      var index = this.current_index;
+      var position = this.slide_lists.position[index] * -1 + (this.slide_wrapper_width / 2);
+
+      this.animateSlideLists(position);
+    },
+    animateSlideLists:function(position){
 
       var df = new $.Deferred();
       var self = this;
-      var duration = this.model.get("duration");
-      var position = this.getSlidePosition();
+      var duration = _config.slide.duration;
 
-      this.$el.stop(true,false).animate(
+      this.is_animating = true;
+
+      this.$slide.stop(true,false).animate(
         {"margin-left":position},
         duration,
         function(){
+          self.is_animating = false;
           df.resolve();
       });
 
       return df.promise();
 
     },
-    getSlidePosition:function(){
-      var current = Cells.where({current:true})[0];
-      return current.get("position") * -1 + (this.model.get("width") / 2) ;
+
+    getSlideIndex:function(){
+      //TODOTODO
+      return 50;
     }
-  });
 
-  var ControllerView = Backbone.View.extend({
-    el:$("#control"),
-    // The DOM events specific to an item.
-    events: {
-      "click #prev"   : "prev",
-      "click #next"   : "next",
-    },
-    next:function(){
-      var index = Cells.getCurrentIndex() + 1;
+  }
 
-      if (index >= Cells.length)
-        index = 0
+  function getMargin($target,prop){
+    return parseInt($target.css(prop));
+  }
 
-      Cells.updatePosition(index);
+  var slider = new Slider();
 
-    },
-    prev:function(){
-      var index = Cells.getCurrentIndex() - 1;
 
-      if (index < 0)
-        index = Cells.length - 1
 
-      Cells.updatePosition(index);
-    }
-  });
-
-  var Slider = new SliderView;
-  var Controller = new ControllerView;
-
-})();
-
+})()
