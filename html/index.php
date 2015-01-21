@@ -45,11 +45,9 @@
       margin-left: -45px;
     }
   </style>
-  <script src="./js/json2.js"></script>
-  <script src="./js/jquery.js"></script>
+<!-- めんどうくさかったのでCDNまんまで -->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <script src="./js/underscore.js"></script>
-  <script src="./js/backbone.js"></script>
-  <script src="./js/backbone.localStorage.js"></script>
 
 </head>
 <body>
